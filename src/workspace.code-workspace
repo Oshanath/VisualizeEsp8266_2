@@ -1,0 +1,37 @@
+{
+	"folders": [
+		{
+			"name": "Visualize",
+			"path": "D:\\Projects\\Embedded_Projects\\Visualize\\Visualize"
+		},
+		{
+			"name": "ttest",
+			"path": "D:\\Projects\\Embedded_Projects\\ttest"
+		},
+		{
+			"name": "st",
+			"path": "..\\..\\st"
+		},
+		{
+			"name": "aaa",
+			"path": "..\\..\\aaa"
+		},
+		{
+			"name": "bbb",
+			"path": "..\\..\\bbb"
+		},
+		{
+			"name": "Visualize_esp8266",
+			"path": "..\\..\\Visualize_esp8266"
+		},
+		{
+			"name": "gy271ArduinoTest",
+			"path": "..\\..\\gy271ArduinoTest"
+		},
+		{
+			"name": "VisualizeEsp8266_2",
+			"path": ".."
+		}
+	],
+	"settings": {}
+}
