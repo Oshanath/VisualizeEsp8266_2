@@ -16,7 +16,7 @@ void MechaQMC5883::WriteReg(byte Reg,byte val){
 void MechaQMC5883::init(){
   WriteReg(0x0B,0x01);
   //Define Set/Reset period
-  setMode(Mode_Continuous,ODR_200Hz,RNG_2G,OSR_512);
+  setMode(Mode_Continuous,ODR_200Hz,RNG_8G,OSR_512);
   /*
   Define
   OSR = 512
