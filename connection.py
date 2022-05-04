@@ -40,9 +40,13 @@ def handle_client(conn, addr):
 
             print('recv:', data.decode('ascii'))
             
-            x.append(dataJson['x'])
-            y.append(dataJson['y'])
-            z.append(dataJson['z'])
+            if dataJson['type'] == 'mag':
+                x.append(dataJson['x'])
+                y.append(dataJson['y'])
+                z.append(dataJson['z'])
+            
+            elif dataJson['type'] == 'compass':
+                print(dataJson['angle'])
 
             time.sleep(0.01)
 

@@ -3,6 +3,9 @@
 #include <ESP8266WiFi.h>
 #include <json.hpp>
 #include <sstream>
+#include "joystick.h"
+#include "RGBLed.h"
+#include "arduino-timer.h"
 
 #define LED_Clock D5
 #define LED_Chip_Select D8
@@ -10,7 +13,6 @@
 
 I2CScanner scanner;
 LedControl lc=LedControl(LED_Data_IN, LED_Clock, LED_Chip_Select, 1);
-
 
 void ledInit(){
   /*
@@ -50,37 +52,57 @@ const char* password = "11111111";
 const char* host = "192.168.1.8";
 const uint16_t port = 17;
 WiFiClient client;
+Joystick joystick(D5, A0);
+RGBLed rgbLed(D6, D7, D8);
+auto timer = timer_create_default();
 
+float angle = 0;
+
+bool sendCompassAngle(void* a){
+  Serial.println("Sending mag data via wifi.");
+  if (client.connected()) { 
+    json::JSON obj;
+    obj["type"] = "compass";
+    obj["angle"] = angle;
+
+    std::stringstream ss; 
+    ss << obj;
+    client.println(ss.str().c_str());
+  }
+
+  return true;
+}
 
 void setup() {
   Serial.begin(9600);
-  while(!Serial){}
+  while(!Serial);
+
+  rgbLed.setColor(RED);
   sensorsInit();
+  rgbLed.setColor(0, 0, 0);
+
   scanner.Init();
   ledInit();
   down = getAccelDownVector();
   gravityCorrection = Eigen::Quaternion<float>::FromTwoVectors(down, Eigen::Vector3f(0, 0, 1));
-  
-  pinMode(D4, OUTPUT);
-  pinMode(D4, INPUT);
 
-  digitalWrite(D4, HIGH);
   Serial.println("Starting mag cal");
+
+  // rgbLed.setColor(BLUE);
   // magCalData = getMagCalData(gravityCorrection);
-  // magCalData = MagCalData{
-  //       .hardIron = Eigen::Vector3f(3339.50, 41.50, -1058.50),
-  //       .softIron = Eigen::Quaternion<float>(0.00, -0.54, 0.07,0.84),
-  //       .scale = 0.62
-  // };
+  // rgbLed.setColor(0, 0, 0);
+
   magCalData = MagCalData{
-        .hardIron = Eigen::Vector3f(2512.50, -979.50, 274.00),
-        .softIron = Eigen::Quaternion<float>(0.00, -0.38, 0.35,0.86),
-        .scale = 0.54
+        .hardIron = Eigen::Vector3f(-545.00, -1005.00, -489.00),
+        .softIron = Eigen::Quaternion<float>(0.00, 0.42, -0.47,0.77),
+        .scale = 0.74
   };
+
   printMagCalDataCode(magCalData);
   digitalWrite(D4, LOW);
 
   // Connect to Wi-Fi network with SSID and password
+  rgbLed.setColor(GREEN);
   Serial.print("Connecting to ");
   Serial.println(ssid);
   WiFi.begin(ssid, password);
@@ -89,11 +111,10 @@ void setup() {
     Serial.print(".");
   }
   // Print local IP address and start web server
-  // Serial.println("");
   Serial.println("WiFi connected.");
-  // Serial.print("IP address: ");
-  // Serial.println(WiFi.localIP());
+  rgbLed.setColor(0, 0, 0);
 
+  rgbLed.setColor(PURPLE);
   Serial.print("connecting to ");
   Serial.print(host);
   Serial.print(':');
@@ -105,11 +126,15 @@ void setup() {
     delay(500);
   }
   Serial.println("Connected");
+  rgbLed.setColor(0, 0, 0);
+
+  timer.every(500, sendCompassAngle);
 }
 
 void loop() {
   // scanner.Scan();
-
+  timer.tick();
+  rgbLed.setColor(0, 0, 0);
   Eigen::Vector3i magnetometerRawi;
   getMagnetometerRaw(magnetometerRawi);
   Eigen::Vector3f magnetometerRaw(magnetometerRawi.x(), magnetometerRawi.y(), magnetometerRawi.z());
@@ -123,15 +148,16 @@ void loop() {
 
   Eigen::Vector3f mag = getCorrectMag(magnetometerRaw, magCalData);
   
-  float angle = getCompassHeading(mag);
+  angle = getCompassHeading(mag);
   // Serial.println(angle);
-  ledDisplayValue(angle);
+  // ledDisplayValue(angle);
 
-  if(!digitalRead(D3)){
+  if(joystick.isClicked()){
     // This will send a string to the server
-    Serial.println("Sending data via wifi.");
+    Serial.println("Sending mag data via wifi.");
     if (client.connected()) { 
       json::JSON obj;
+      obj["type"] = "mag";
       obj["x"] = mag.x();
       obj["y"] = mag.y();
       obj["z"] = mag.z();
@@ -140,7 +166,6 @@ void loop() {
       ss << obj;
       client.println(ss.str().c_str());
     }
-    delay(1000);
 
   }
 }
