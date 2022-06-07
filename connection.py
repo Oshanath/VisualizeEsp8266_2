@@ -38,15 +38,20 @@ def handle_client(conn, addr):
             except Exception:
                 continue
 
-            print('recv:', data.decode('ascii'))
+            # print('recv:', data.decode('ascii'))
             
-            if dataJson['type'] == 'mag':
-                x.append(dataJson['x'])
-                y.append(dataJson['y'])
-                z.append(dataJson['z'])
+            if dataJson['type'] == 'pos':
+                # x.append(dataJson['x'])
+                # y.append(dataJson['y'])
+                # z.append(dataJson['z'])
+                print(dataJson['x'], '\t', dataJson['y'], '\t', dataJson['z'])
             
-            elif dataJson['type'] == 'compass':
-                print(dataJson['angle'])
+            # elif dataJson['type'] == 'compass':
+            #     print(dataJson['angle'])
+
+            # elif dataJson['type'] == 'accelGyro':
+            #     print(dataJson['accel'])
+            #     print(dataJson['gyro'])
 
             time.sleep(0.01)
 
@@ -56,6 +61,7 @@ def handle_client(conn, addr):
         print('[DEBUG] addr:', addr, 'Exception:', ex, )
     finally:
         conn.close()
+        plt.close()
 
 # --- main ---
 
@@ -89,7 +95,7 @@ try:
         print('[DEBUG] addr:', addr)
         t = threading.Thread(target=handle_client, args=(conn, addr))
         t.start()
-        plt.show()
+        # plt.show() 
 
 
 except Exception as ex:

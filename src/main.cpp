@@ -6,101 +6,29 @@
 #include "joystick.h"
 #include "RGBLed.h"
 #include "arduino-timer.h"
-
-#define LED_Clock D5
-#define LED_Chip_Select D8
-#define LED_Data_IN D7
+#include "navigator.h"
 
 I2CScanner scanner;
-LedControl lc=LedControl(LED_Data_IN, LED_Clock, LED_Chip_Select, 1);
+Navigator navigator;
 
-void ledInit(){
-  /*
-   The MAX72XX is in power-saving mode on startup,
-   we have to do a wakeup call
-   */
-  lc.shutdown(0,false);
-  /* Set the brightness to a medium values */
-  lc.setIntensity(0,8);
-  /* and clear the display */
-  lc.clearDisplay(0);
-}
-
-void ledDisplayValue(int value){
-  int digits[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-  int index = 7;
-
-  while(value != 0){
-    digits[index] = value % 10;
-    value = floor(value / 10);
-    index--;
-  }
-
-  for(int i = 0; i < 8; i++){
-    lc.setDigit(0, 7 - i, digits[i], false);
-  }
-}
-
-Eigen::Vector3f down;
-Eigen::Quaternion<float> gravityCorrection;
-MagCalData magCalData;
 const char* ssid = "DESKTOP-L2QLGKV 4322";
 const char* password = "11111111";
-// const char* ssid = "iPhone XR";
-// const char* password = "wesapakaya";
-// const char* host = "10.10.17.7";
-const char* host = "192.168.1.8";
+// const char* host = "192.168.1.8";
+const char* host = "192.168.8.175";
 const uint16_t port = 17;
 WiFiClient client;
-Joystick joystick(D5, A0);
 RGBLed rgbLed(D6, D7, D8);
 auto timer = timer_create_default();
 
-float angle = 0;
-
-bool sendCompassAngle(void* a){
-  Serial.println("Sending mag data via wifi.");
-  if (client.connected()) { 
-    json::JSON obj;
-    obj["type"] = "compass";
-    obj["angle"] = angle;
-
-    std::stringstream ss; 
-    ss << obj;
-    client.println(ss.str().c_str());
-  }
-
+bool printPosition(void* a){
+  printVector3f(navigator.pos);
   return true;
 }
 
-void setup() {
-  Serial.begin(9600);
-  while(!Serial);
+unsigned long start;
+unsigned long end;
 
-  rgbLed.setColor(RED);
-  sensorsInit();
-  rgbLed.setColor(0, 0, 0);
-
-  scanner.Init();
-  ledInit();
-  down = getAccelDownVector();
-  gravityCorrection = Eigen::Quaternion<float>::FromTwoVectors(down, Eigen::Vector3f(0, 0, 1));
-
-  Serial.println("Starting mag cal");
-
-  // rgbLed.setColor(BLUE);
-  // magCalData = getMagCalData(gravityCorrection);
-  // rgbLed.setColor(0, 0, 0);
-
-  magCalData = MagCalData{
-        .hardIron = Eigen::Vector3f(-545.00, -1005.00, -489.00),
-        .softIron = Eigen::Quaternion<float>(0.00, 0.42, -0.47,0.77),
-        .scale = 0.74
-  };
-
-  printMagCalDataCode(magCalData);
-  digitalWrite(D4, LOW);
-
+void connectToWifi(){
   // Connect to Wi-Fi network with SSID and password
   rgbLed.setColor(GREEN);
   Serial.print("Connecting to ");
@@ -127,45 +55,90 @@ void setup() {
   }
   Serial.println("Connected");
   rgbLed.setColor(0, 0, 0);
-
-  timer.every(500, sendCompassAngle);
 }
+
+void setup() {
+  Serial.begin(9600);
+  while(!Serial);
+
+  rgbLed.setColor(RED);
+  sensorsInit();
+  rgbLed.setColor(0, 0, 0);
+
+  scanner.Init();
+  navigator.down = getAccelDownVector(); 
+  navigator.gravityCorrection = Eigen::Quaternion<float>::FromTwoVectors(navigator.down, Eigen::Vector3f(0, 0, 1));
+
+  Serial.println("Starting mag cal");
+
+  // rgbLed.setColor(BLUE);
+  // navigator.magCalData = getMagCalData(navigator.gravityCorrection);
+  // rgbLed.setColor(0, 0, 0);
+
+  navigator.magCalData = MagCalData{
+        .hardIron = Eigen::Vector3f(1210.00, -334.00, 646.00),
+        .softIron = Eigen::Quaternion<float>(0.00, 0.32, -0.42,0.85),
+        .scale = 0.61
+  };
+
+  navigator.initialAccel = navigator.down.norm();
+  navigator.setInitialMag();
+  
+  Eigen::Vector3f accel;
+  Eigen::Vector3f gyro;
+  int temp;
+
+  getAccelGyroTemp(accel, gyro, temp);
+  navigator.initialGyro = gyro;
+
+  printMagCalDataCode(navigator.magCalData);
+
+  pinMode(D5, INPUT_PULLUP);
+
+  // connectToWifi();
+
+  timer.every(200, printPosition);
+
+  start = millis();
+
+}
+
+float epsilon = 0.01f;
 
 void loop() {
   // scanner.Scan();
   timer.tick();
-  rgbLed.setColor(0, 0, 0);
-  Eigen::Vector3i magnetometerRawi;
-  getMagnetometerRaw(magnetometerRawi);
-  Eigen::Vector3f magnetometerRaw(magnetometerRawi.x(), magnetometerRawi.y(), magnetometerRawi.z());
-
-  Eigen::Vector3f accel;
-  Eigen::Vector3f gyro;
   int temp;
-  getAccelGyroTemp(accel, gyro, temp);
 
-  accel = gravityCorrection * accel;
+  getAccelGyroTemp(navigator.accel, navigator.gyro, temp);
 
-  Eigen::Vector3f mag = getCorrectMag(magnetometerRaw, magCalData);
+  navigator.setCorrectGyro();
+  navigator.accel = navigator.gravityCorrection * navigator.accel;
+
+  // correcting the accel axes
+  navigator.accel(2) = -navigator.accel.z();
+  auto q2 = Eigen::Quaternion<float>::FromTwoVectors(Eigen::Vector3f(0, 1, 0), Eigen::Vector3f(1, 0, 0));
+  navigator.accel = q2 * navigator.accel;
+
+  navigator.mag = navigator.getMagVector();
   
-  angle = getCompassHeading(mag);
-  // Serial.println(angle);
-  // ledDisplayValue(angle);
+  navigator.angle = getCompassHeading(navigator.mag);
 
-  if(joystick.isClicked()){
-    // This will send a string to the server
-    Serial.println("Sending mag data via wifi.");
-    if (client.connected()) { 
-      json::JSON obj;
-      obj["type"] = "mag";
-      obj["x"] = mag.x();
-      obj["y"] = mag.y();
-      obj["z"] = mag.z();
+  navigator.calculateAccelNoGravity();
 
-      std::stringstream ss; 
-      ss << obj;
-      client.println(ss.str().c_str());
-    }
+  end = millis();
+  unsigned long delta = end - start;
+  navigator.calculateOrientation(delta);
+  navigator.calculatePosition(delta);
+  start = end;
 
+  if(digitalRead(D5) == HIGH){
+    Serial.println("off");
+    rgbLed.setColor(0, 0, 0);
   }
+  else if(digitalRead(D5) == LOW){
+    Serial.println("on");
+    rgbLed.setColor(PURPLE);
+  } 
+
 }

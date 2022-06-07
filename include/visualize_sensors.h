@@ -11,10 +11,41 @@ void sensorsInit();
 
 inline void printVector3f(Eigen::Vector3f& v){
   Serial.print(v.x());
-  Serial.print(",");
+  Serial.print("\t");
   Serial.print(v.y());
-  Serial.print(",");
+  Serial.print("\t");
   Serial.print(v.z());
+  Serial.print("\n");
+}
+
+inline void printVector3f(Eigen::Vector3f&& v){
+  Serial.print(v.x());
+  Serial.print("\t");
+  Serial.print(v.y());
+  Serial.print("\t");
+  Serial.print(v.z());
+  Serial.print("\n");
+}
+
+inline void printQuaternionf(Eigen::Quaternionf& q){
+  Serial.print(q.x());
+  Serial.print("\t");
+  Serial.print(q.y());
+  Serial.print("\t");
+  Serial.print(q.z());
+  Serial.print("\t");
+  Serial.print(q.w());
+  Serial.print("\n");
+}
+
+inline void printQuaternionf(Eigen::Quaternionf&& q){
+  Serial.print(q.x());
+  Serial.print("\t");
+  Serial.print(q.y());
+  Serial.print("\t");
+  Serial.print(q.z());
+  Serial.print("\t");
+  Serial.print(q.w());
   Serial.print("\n");
 }
 
@@ -35,6 +66,6 @@ struct MagCalData{
 void magnetometerInit();
 void getMagnetometerRaw(Eigen::Vector3i& magnetometerRaw);
 MagCalData getMagCalData(Eigen::Quaternion<float>& gravityCorrection);
-Eigen::Vector3f getCorrectMag(Eigen::Vector3f& rawMag, MagCalData& magCalData);
+Eigen::Vector3f getCorrectMag(Eigen::Vector3f& rawMag, const MagCalData& magCalData);
 float getCompassHeading(Eigen::Vector3f& mag);
 void printMagCalDataCode(MagCalData& data);

@@ -87,7 +87,7 @@ void getAccelGyroTemp(Eigen::Vector3f& accelRaw, Eigen::Vector3f& gyroRaw, int& 
   mpu.getEvent(&a, &g, &temp);
 
   accelRaw << a.acceleration.x, a.acceleration.y, a.acceleration.z;
-  gyroRaw << a.gyro.x, a.gyro.y, a.gyro.z;
+  gyroRaw << g.gyro.x, g.gyro.y, g.gyro.z;
   t = temp.temperature;
 }
 
@@ -203,7 +203,7 @@ MagCalData getMagCalData(Eigen::Quaternion<float>& gravityCorrection){
 
 }
 
-Eigen::Vector3f getCorrectMag(Eigen::Vector3f& rawMag, MagCalData& magCalData){
+Eigen::Vector3f getCorrectMag(Eigen::Vector3f& rawMag, const MagCalData& magCalData){
 
   Eigen::Vector3f v = rawMag - magCalData.hardIron;
   v = magCalData.softIron * v;
@@ -231,7 +231,7 @@ float getCompassHeading(Eigen::Vector3f& mag){
 }
 
 void printMagCalDataCode(MagCalData& data){
-  Serial.println("magCalData = MagCalData{");
+  Serial.println("navigator.magCalData = MagCalData{");
   Serial.print("\t.hardIron = Eigen::Vector3f(");
   Serial.print(data.hardIron.x());
   Serial.print(", ");
