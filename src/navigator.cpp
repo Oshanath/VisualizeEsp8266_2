@@ -18,7 +18,10 @@ Navigator::Navigator(): accels({
         Eigen::Vector3f(0, 0, 0)
         }),
         orientation(Eigen::Quaternionf(1, 0, 0, 0)),
-        angle(0.0f)
+        angle(0.0f),
+        trigger(false),
+        steps(0),
+        lastStep(0)
         {}
 
 Eigen::Vector3f Navigator::getMagVector() const{
@@ -48,7 +51,7 @@ void Navigator::calculatePosition(unsigned long millis){
     vels[0] = vels[1];
     vels[1] = vels[1] + 0.5 * float(millis) * 0.001 * (accels[1] + accels[0]);
 
-    if(abs(gyro.x()) < epsilon && abs(gyro.y()) < epsilon && abs(gyro.z()) < epsilon){
+    if(!trigger or (abs(gyro.x()) < epsilon and abs(gyro.y()) < epsilon and abs(gyro.z()) < epsilon)){
         vels[1] = Eigen::Vector3f(0, 0, 0);
     }
 
@@ -67,24 +70,43 @@ void Navigator::calculateOrientation(long millis){
 
     // // If device is still and flat correct orientation using gravity and magnetic north
 
-    if(abs(gyro.x()) < epsilon && abs(gyro.y()) < epsilon && abs(gyro.z()) < epsilon){
-        float angle = 2 * acos(Eigen::Quaternionf::FromTwoVectors(Eigen::Vector3f(0, 0, -1), accel).w()) / 3.14 * 180;
-        if(angle < 10){
-            Eigen::Vector3f newAccel = orientation * Eigen::Vector3f(0, 0, -1);
-            auto q = Eigen::Quaternionf::FromTwoVectors(newAccel, accel);
-            orientation = orientation * q;
+    // if(abs(gyro.x()) < epsilon && abs(gyro.y()) < epsilon && abs(gyro.z()) < epsilon){
+    //     float angle = 2 * acos(Eigen::Quaternionf::FromTwoVectors(Eigen::Vector3f(0, 0, -1), accel).w()) / 3.14 * 180;
+    //     if(angle < 10){
+    //         Eigen::Vector3f newAccel = orientation * Eigen::Vector3f(0, 0, -1);
+    //         auto q = Eigen::Quaternionf::FromTwoVectors(newAccel, accel);
+    //         orientation = orientation * q;
 
-            auto north = ((Eigen::Vector3f(0, 0, 1).cross(-mag)).cross(Eigen::Vector3f(0, 0, -1)));
-            auto theoreticalMag = orientation.inverse() * initialMag;
-            auto theoreticalNorth = ((Eigen::Vector3f(0, 0, 1).cross(-theoreticalMag)).cross(Eigen::Vector3f(0, 0, -1)));
-            orientation = Eigen::Quaternionf::FromTwoVectors(theoreticalNorth, north).inverse() * orientation;
+    //         auto north = ((Eigen::Vector3f(0, 0, 1).cross(-mag)).cross(Eigen::Vector3f(0, 0, -1)));
+    //         auto theoreticalMag = orientation.inverse() * initialMag;
+    //         auto theoreticalNorth = ((Eigen::Vector3f(0, 0, 1).cross(-theoreticalMag)).cross(Eigen::Vector3f(0, 0, -1)));
+    //         orientation = Eigen::Quaternionf::FromTwoVectors(theoreticalNorth, north).inverse() * orientation;
 
-        }
-    }
+    //     }
+    // }
 }
 
 void Navigator::setCorrectGyro(){
     gyro = gyro - initialGyro;
     Eigen::Vector3f temp(-gyro.y(), gyro.x(), gyro.z());
     gyro = temp;
+}
+
+void Navigator::step(){
+
+    long now = millis();
+
+    if(now - lastStep > 200){
+        steps++;
+        lastStep = now;
+        Serial.println(steps);
+    }
+
+}
+
+void Navigator::startMap(){
+
+    Eigen::Vector3f north = ((Eigen::Vector3f(0, 0, 1).cross(mag)).cross(Eigen::Vector3f(0, 0, 1)));
+    orientation = Eigen::Quaternionf::FromTwoVectors(north, Eigen::Vector3f(1, 0, 0));
+
 }

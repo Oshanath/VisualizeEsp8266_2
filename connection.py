@@ -2,12 +2,12 @@ import socket
 import sys
 import threading
 import time
-import datetime
-from mpl_toolkits import mplot3d
-import numpy as np
-from matplotlib import pyplot as plt
-from IPython.display import clear_output
-from matplotlib.animation import FuncAnimation
+# import datetime
+# from mpl_toolkits import mplot3d
+# import numpy as np
+# from matplotlib import pyplot as plt
+# from IPython.display import clear_output
+# from matplotlib.animation import FuncAnimation
 import json
 
 # --- constants ---
@@ -21,10 +21,10 @@ z = []
 
 # --- functions ---
 
-def update(data):
-    ax.cla()
-    ax.scatter(x, y, z, cmap='Greens')
-    # ax.plot(x, y, z)
+# def update(data):
+#     ax.cla()
+#     ax.scatter(x, y, z, cmap='Greens')
+#     # ax.plot(x, y, z)
 
 def handle_client(conn, addr):
     try:
@@ -45,13 +45,9 @@ def handle_client(conn, addr):
                 # y.append(dataJson['y'])
                 # z.append(dataJson['z'])
                 print(dataJson['x'], '\t', dataJson['y'], '\t', dataJson['z'])
-            
-            # elif dataJson['type'] == 'compass':
-            #     print(dataJson['angle'])
 
-            # elif dataJson['type'] == 'accelGyro':
-            #     print(dataJson['accel'])
-            #     print(dataJson['gyro'])
+            if dataJson['type'] == 'angle':
+                print(dataJson['angle'])
 
             time.sleep(0.01)
 
@@ -61,24 +57,24 @@ def handle_client(conn, addr):
         print('[DEBUG] addr:', addr, 'Exception:', ex, )
     finally:
         conn.close()
-        plt.close()
+        # plt.close()
 
 # --- main ---
 
-fig = plt.figure()
-ax = plt.axes(projection='3d')
+# fig = plt.figure()
+# ax = plt.axes(projection='3d')
 
-ax.scatter(x, y, z, cmap='Greens')
-# ax.plot(x, y, z)
+# ax.scatter(x, y, z, cmap='Greens')
+# # ax.plot(x, y, z)
 
-plt.title("test plot")
-plt.xlabel("x")
-plt.ylabel("y")
-ax.set_zlabel('z')
+# plt.title("test plot")
+# plt.xlabel("x")
+# plt.ylabel("y")
+# ax.set_zlabel('z')
 
-plt.legend(["x"])
+# plt.legend(["x"])
 
-ani = FuncAnimation(fig, update, interval=100)
+# ani = FuncAnimation(fig, update, interval=100)
 
 try:
     print('[DEBUG] create socket')    

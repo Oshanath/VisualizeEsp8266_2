@@ -1,5 +1,6 @@
 #include <ArduinoEigenDense.h>
 #include "visualize_sensors.h"
+#include <vector>
 
 class Navigator{
 
@@ -23,6 +24,11 @@ public:
     Eigen::Vector3f gyros[2];
     Eigen::Quaternionf orientation;
 
+    bool trigger;
+
+    int steps;
+    long lastStep;
+
     Navigator();
     Eigen::Vector3f getMagVector() const;
     void setInitialMag();
@@ -30,4 +36,6 @@ public:
     void calculatePosition(unsigned long millis);
     void setCorrectGyro();
     void calculateOrientation(long millis);
+    void step();
+    void startMap();
 };

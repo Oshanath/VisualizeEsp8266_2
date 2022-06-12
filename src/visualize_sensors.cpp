@@ -215,7 +215,7 @@ Eigen::Vector3f getCorrectMag(Eigen::Vector3f& rawMag, const MagCalData& magCalD
 
 float getCompassHeading(Eigen::Vector3f& mag){
 
-  Eigen::Vector3f north = ((Eigen::Vector3f(0, 0, 1).cross(-mag)).cross(Eigen::Vector3f(0, 0, 1)));
+  Eigen::Vector3f north = ((Eigen::Vector3f(0, 0, 1).cross(mag)).cross(Eigen::Vector3f(0, 0, 1)));
   float angle = std::atan(north.y() / north.x()) * 360 / (2 * PI);
 
   float dot = -mag.dot(Eigen::Vector3f(1, 0, 0));
