@@ -1,0 +1,15 @@
+{
+    "maps": 2,
+    "data": [
+        {
+            "id": 1,
+            "name":"boarding",
+            "nodes": 6
+        },
+        {
+            "id": 0,
+            "name":"embedded lab",
+            "nodes": 7
+        }
+    ]
+}

@@ -5,13 +5,10 @@
 class Node{
 
 public:
-    std::string name;
     float x;
     float y;
     std::vector<int> neighbours;
 
-    Node(){
-        
-    }
+    Node(float x, float y): x(x), y(y){}
 
 };

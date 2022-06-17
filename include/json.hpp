@@ -1,5 +1,7 @@
+#ifndef JSON_H
+#define JSON_H
 
-#pragma once
+//https://github.com/nbsdx/SimpleJSON
 
 #include <cstdint>
 #include <cmath>
@@ -647,3 +649,6 @@ JSON JSON::Load( const string &str ) {
 }
 
 } // End Namespace json
+
+
+#endif

@@ -4,8 +4,8 @@ Adafruit_MPU6050 mpu;
 MechaQMC5883 qmc;
 
 void sensorsInit(){
-  Wire.begin();
-  mpu6050Init(MPU6050_RANGE_8_G, MPU6050_RANGE_500_DEG, MPU6050_BAND_21_HZ);
+  Wire.begin(0);
+  // mpu6050Init(MPU6050_RANGE_8_G, MPU6050_RANGE_500_DEG, MPU6050_BAND_21_HZ);
   magnetometerInit();
 }
 
@@ -128,7 +128,7 @@ void getMagnetometerRaw(Eigen::Vector3i& magnetometerRaw){
   magnetometerRaw << x, y, z;
 }
 
-MagCalData getMagCalData(Eigen::Quaternion<float>& gravityCorrection){
+MagCalData getMagCalData(){
 
   const int dataPoints = 1000;
 
@@ -169,7 +169,6 @@ MagCalData getMagCalData(Eigen::Quaternion<float>& gravityCorrection){
 
   for(int i = 0; i < dataPoints; i++){
     data[i] = data[i] - hardIron;
-    data[i] = gravityCorrection * data[i];
   }
 
   Eigen::Vector3f* majorPoint = &data[0];
@@ -215,7 +214,7 @@ Eigen::Vector3f getCorrectMag(Eigen::Vector3f& rawMag, const MagCalData& magCalD
 
 float getCompassHeading(Eigen::Vector3f& mag){
 
-  Eigen::Vector3f north = ((Eigen::Vector3f(0, 0, 1).cross(mag)).cross(Eigen::Vector3f(0, 0, 1)));
+  Eigen::Vector3f north = ((Eigen::Vector3f(0, 0, 1).cross(-mag)).cross(Eigen::Vector3f(0, 0, 1)));
   float angle = std::atan(north.y() / north.x()) * 360 / (2 * PI);
 
   float dot = -mag.dot(Eigen::Vector3f(1, 0, 0));

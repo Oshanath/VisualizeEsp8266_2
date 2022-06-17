@@ -1,30 +1,31 @@
-#pragma once
+#ifndef MAP_H
+#define MAP_H
+
 #include "Node.h"
 #include <vector>
+#include <Arduino.h>
+#include <string>
+#include <ArduinoEigenDense.h>
+#include "arduino-timer.h"
 
 class Map{
 public:
     std::vector<Node> nodes;
+    int activeNode;
     bool started;
+    std::string name;
+    std::vector<int> currentShortestPathTree;
+    int currentDestination;
 
-    Map(): started(false){
-        
-    }
-
-    void createNode(int closestApproachable, float x, float y, std::string name){
-        nodes.emplace_back();
-        int index = nodes.size() - 1;
-        nodes[closestApproachable].neighbours.push_back(index);
-        nodes[index].neighbours.push_back(closestApproachable);
-        nodes[index].x = x;
-        nodes[index].y = y;
-        nodes[index].name = name;
-    }
+    Map(std::string name);
+    void createNode(int closestApproachable, float x, float y);
+    Node& getActiveNode();
+    void rotate(float azimuthInDegrees);
+    void updateShortestPathTree();
+    void startNavigating(int destination);
+    int getNextNode();
+    void addEdge(int from, int to);
 
 };
 
-/*
-Sync with RFID. Get the magnetic north at the same time.
-Set the device's tracking orientation to point to the current direction relative to the north. (make north 1, 0 direction)
-Rotate the current north to the absolute north. Absolute north is with the map itself.
-*/
+#endif

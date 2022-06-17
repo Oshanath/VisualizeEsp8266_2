@@ -1,4 +1,6 @@
-luisllamasbinaburo/I2CScanner @ ^1.0.1
+marcoschwartz/LiquidCrystal_I2C @ ^1.1.4
 hideakitai/ArduinoEigen @ ^0.2.3
 adafruit/Adafruit MPU6050 @ ^2.1.0
+adafruit/Adafruit MCP4725 @ ^2.0.0
+luisllamasbinaburo/I2CScanner @ ^1.0.1
 wayoda/LedControl @ ^1.0.6

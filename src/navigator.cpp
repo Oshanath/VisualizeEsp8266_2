@@ -4,14 +4,7 @@
 #define accelEpsilon 2.0f
 #define velEpsilon 1.0f
 
-Navigator::Navigator(): accels({
-        Eigen::Vector3f(0, 0, 0),
-        Eigen::Vector3f(0, 0, 0)}),
-        
-        vels({
-        Eigen::Vector3f(0, 0, 0),
-        Eigen::Vector3f(0, 0, 0)}),
-        
+Navigator::Navigator(): 
         pos(Eigen::Vector3f(0, 0, 0)),
         gyros({
         Eigen::Vector3f(0, 0, 0),
@@ -21,7 +14,8 @@ Navigator::Navigator(): accels({
         angle(0.0f),
         trigger(false),
         steps(0),
-        lastStep(0)
+        lastStep(0),
+        averageStep(0.431818)
         {}
 
 Eigen::Vector3f Navigator::getMagVector() const{
@@ -35,27 +29,16 @@ void Navigator::setInitialMag(){
     initialMag = getMagVector();
 }
 
-void Navigator::calculateAccelNoGravity(){
-    accelNoGravity = orientation * accel;
-    accelNoGravity = accelNoGravity - initialAccel * Eigen::Vector3f(0, 0, -1);
-    accelNoGravity = orientation.inverse() * accelNoGravity;
-}
+// void Navigator::calculateAccelNoGravity(){
+//     accelNoGravity = orientation * accel;
+//     accelNoGravity = accelNoGravity - initialAccel * Eigen::Vector3f(0, 0, -1);
+//     accelNoGravity = orientation.inverse() * accelNoGravity;
+// }
 
 
-void Navigator::calculatePosition(unsigned long millis){
+void Navigator::calculatePosition(){
 
-    accels[0] = accels[1];
-    accels[1] = accelNoGravity;
-    accels[1] = -accels[1];
-
-    vels[0] = vels[1];
-    vels[1] = vels[1] + 0.5 * float(millis) * 0.001 * (accels[1] + accels[0]);
-
-    if(!trigger or (abs(gyro.x()) < epsilon and abs(gyro.y()) < epsilon and abs(gyro.z()) < epsilon)){
-        vels[1] = Eigen::Vector3f(0, 0, 0);
-    }
-
-    pos = pos + (0.5 * float(millis) * 0.001 * (vels[1] + vels[0]));
+    pos += getForwardVector() * averageStep;
 
 }
 
@@ -92,14 +75,34 @@ void Navigator::setCorrectGyro(){
     gyro = temp;
 }
 
-void Navigator::step(){
+void Navigator::step(Map& currentMap, void (*stopNavigation)()){
 
     long now = millis();
+    int activeNode = currentMap.activeNode;
 
     if(now - lastStep > 200){
         steps++;
         lastStep = now;
-        Serial.println(steps);
+        calculatePosition();
+        printVector3f(pos);
+
+        for(int neighbour : currentMap.getActiveNode().neighbours){
+            Node& neighbourNode = currentMap.nodes[neighbour];
+
+            if((pos - Eigen::Vector3f(neighbourNode.x, neighbourNode.y, 0)).norm() < 0.4){
+                currentMap.activeNode = neighbour;
+                break;
+            }
+        }
+
+        if(activeNode != currentMap.activeNode){
+            currentMap.updateShortestPathTree();
+        }
+
+        if(activeNode == currentMap.currentDestination){
+            stopNavigation();
+        }
+
     }
 
 }
@@ -108,5 +111,23 @@ void Navigator::startMap(){
 
     Eigen::Vector3f north = ((Eigen::Vector3f(0, 0, 1).cross(mag)).cross(Eigen::Vector3f(0, 0, 1)));
     orientation = Eigen::Quaternionf::FromTwoVectors(north, Eigen::Vector3f(1, 0, 0));
+
+}
+
+Eigen::Vector3f Navigator::getForwardVector(){
+    Eigen::Vector3f north = ((Eigen::Vector3f(0, 0, 1).cross(mag)).cross(Eigen::Vector3f(0, 0, 1)));
+    auto q = Eigen::Quaternionf::FromTwoVectors(north, Eigen::Vector3f(1, 0, 0));
+    return q * Eigen::Vector3f(1, 0, 0);
+}
+
+float Navigator::getAngleDifference(Map& map){
+
+    auto forward3 = getForwardVector();
+    Eigen::Vector2f forward(forward3.x(), forward3.y());
+    int nextNode = map.getNextNode();
+    Eigen::Vector2f destination(map.nodes[nextNode].x, map.nodes[nextNode].y);
+    Eigen::Vector2f position(pos.x(), pos.y());
+
+    return abs(acos(forward.normalized().dot((destination - position).normalized()))) / 3.14 * 180;
 
 }

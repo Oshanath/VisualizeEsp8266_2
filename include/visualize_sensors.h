@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VIS_SENS_H
+#define VIS_SENS_H
 
 #include <Wire.h>
 #include <MechaQMC5883.h>
@@ -24,6 +25,20 @@ inline void printVector3f(Eigen::Vector3f&& v){
   Serial.print(v.y());
   Serial.print("\t");
   Serial.print(v.z());
+  Serial.print("\n");
+}
+
+inline void printVector2f(Eigen::Vector2f& v){
+  Serial.print(v.x());
+  Serial.print("\t");
+  Serial.print(v.y());
+  Serial.print("\n");
+}
+
+inline void printVector2f(Eigen::Vector2f&& v){
+  Serial.print(v.x());
+  Serial.print("\t");
+  Serial.print(v.y());
   Serial.print("\n");
 }
 
@@ -65,7 +80,9 @@ struct MagCalData{
 
 void magnetometerInit();
 void getMagnetometerRaw(Eigen::Vector3i& magnetometerRaw);
-MagCalData getMagCalData(Eigen::Quaternion<float>& gravityCorrection);
+MagCalData getMagCalData();
 Eigen::Vector3f getCorrectMag(Eigen::Vector3f& rawMag, const MagCalData& magCalData);
 float getCompassHeading(Eigen::Vector3f& mag);
 void printMagCalDataCode(MagCalData& data);
+
+#endif
